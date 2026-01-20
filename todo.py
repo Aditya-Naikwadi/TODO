@@ -1,57 +1,97 @@
-import sys
+import json
+import os
+
+# Configuration
+FILENAME = "tasks.json"
+
+def load_tasks():
+    """Load tasks from the JSON file."""
+    if not os.path.exists(FILENAME):
+        return []
+    try:
+        with open(FILENAME, "r") as file:
+            return json.load(file)
+    except (json.JSONDecodeError, IOError):
+        return []
+
+def save_tasks(tasks):
+    """Save the task list to the JSON file."""
+    with open(FILENAME, "w") as file:
+        json.dump(tasks, file, indent=4)
 
 def show_menu():
-    print("\n--- TO-DO LIST MENU ---")
+    print("\n" + "="*25)
+    print("   TO-DO LIST PRO")
+    print("="*25)
     print("1. View Tasks")
     print("2. Add Task")
-    print("3. Remove Task")
-    print("4. Exit")
+    print("3. Mark Task Done")
+    print("4. Remove Task")
+    print("5. Exit")
+    print("="*25)
 
 def main():
-    tasks = []
+    tasks = load_tasks()
     
     while True:
         show_menu()
-        choice = input("\nChoose an option (1-4): ")
+        choice = input("\nSelect an option (1-5): ").strip()
 
         if choice == '1':
-            print("\nYOUR TASKS:")
+            print("\n--- YOUR TASKS ---")
             if not tasks:
-                print("Your list is empty.")
+                print("Your list is currently empty.")
             else:
-                for index, task in enumerate(tasks, start=1):
-                    print(f"{index}. {task}")
+                for i, t in enumerate(tasks, 1):
+                    status = "[✔]" if t['done'] else "[ ]"
+                    print(f"{i}. {status} {t['task']}")
 
         elif choice == '2':
-            new_task = input("Enter the task: ")
-            tasks.append(new_task)
-            print("Task added successfully!")
+            task_name = input("Enter the task name: ").strip()
+            if task_name:
+                tasks.append({"task": task_name, "done": False})
+                save_tasks(tasks)
+                print(f"Task '{task_name}' added!")
 
         elif choice == '3':
+            # View tasks first so user knows the index
+            if not tasks:
+                print("Nothing to mark as done.")
+                continue
+            
+            try:
+                idx = int(input("Enter task number to toggle status: ")) - 1
+                if 0 <= idx < len(tasks):
+                    tasks[idx]['done'] = not tasks[idx]['done']
+                    save_tasks(tasks)
+                    print(f"Updated status for: {tasks[idx]['task']}")
+                else:
+                    print("Error: Invalid task number.")
+            except ValueError:
+                print("Error: Please enter a valid number.")
+
+        elif choice == '4':
             if not tasks:
                 print("Nothing to remove.")
                 continue
             
-            # Show tasks so user knows what number to pick
-            for index, task in enumerate(tasks, start=1):
-                print(f"{index}. {task}")
-                
             try:
-                task_num = int(input("Enter the task number to remove: "))
-                if 1 <= task_num <= len(tasks):
-                    removed = tasks.pop(task_num - 1)
-                    print(f"Removed: {removed}")
+                idx = int(input("Enter task number to remove: ")) - 1
+                if 0 <= idx < len(tasks):
+                    removed = tasks.pop(idx)
+                    save_tasks(tasks)
+                    print(f"Deleted: {removed['task']}")
                 else:
-                    print("Invalid number.")
+                    print("Error: Invalid number.")
             except ValueError:
-                print("Please enter a valid number.")
+                print("Error: Please enter a numeric value.")
 
-        elif choice == '4':
-            print("Goodbye!")
-            sys.exit()
+        elif choice == '5':
+            print("Progress saved. Goodbye!")
+            break
 
         else:
-            print("Invalid choice, please try again.")
+            print("Invalid input. Please choose 1-5.")
 
 if __name__ == "__main__":
     main()
